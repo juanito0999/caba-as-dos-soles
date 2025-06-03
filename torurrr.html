@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tour Virtual - Cabañas Dos Soles</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Pannellum CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    #panorama {
+      width: 100vw;
+      height: 100vh; /* Full-screen panorama */
+      transition: opacity 0.7s ease; /* Smoother fade */
+    }
+    .custom-hotspot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background-color: #16A34A; /* Green-600 */
+      color: white;
+      padding: 10px 16px;
+      border-radius: 9999px; /* Fully rounded */
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease, opacity 0.3s ease;
+      font-size: 0.875rem;
+      font-weight: 500;
+      opacity: 0; /* Start hidden */
+      animation: fadeInHotspot 0.5s ease forwards 0.7s; /* Fade in after scene load */
+    }
+    .custom-hotspot:hover {
+      background-color: #15803D; /* Darker green on hover */
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    @keyframes fadeInHotspot {
+      to { opacity: 1; }
+    }
+    .loading {
+      opacity: 0; /* Fade out during scene change */
+    }
+    /* Loader */
+    #loader {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: none;
+      z-index: 20;
+      text-align: center;
+    }
+    .loader-spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #16A34A;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    #error-message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #fef2f2;
+      color: #991b1b;
+      padding: 16px;
+      border-radius: 8px;
+      display: none;
+      z-index: 20;
+      max-width: 300px;
+      text-align: center;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <!-- Header -->
+  <header class="bg-gradient-to-r from-green-600 to-green-700 text-white py-4 shadow-md">
+    <div class="container mx-auto text-center">
+      <h1 class="text-4xl font-semibold tracking-tight">Cabañas Dos Soles</h1>
+      <p class="mt-1 text-lg font-medium opacity-90">Tour Virtual en 360°</p>
+    </div>
+  </header>
+
+  <!-- Panorama Viewer -->
+  <section class="relative">
+    <div id="panorama"></div>
+    <!-- Loader -->
+    <div id="loader">
+      <div class="loader-spinner"></div>
+    </div>
+    <!-- Error Message -->
+    <div id="error-message">
+      No se pudo cargar la imagen. Por favor, verifica la URL o intenta de nuevo.
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-white py-4">
+    <div class="container mx-auto text-center">
+      <p class="text-sm">© 2025 Cabañas Dos Soles. Todos los derechos reservados.</p>
+      <p class="text-sm mt-1"><a href="mailto:cabanas.dos.soles@gmail.com" class="underline hover:text-green-400 transition-colors">Contáctanos</a></p>
+    </div>
+  </footer>
+
+  <script>
+    // Initialize Pannellum viewer
+    let viewer = pannellum.viewer('panorama', {
+      "type": "equirectangular",
+      "panorama": "img.jpg", // Placeholder: Interior
+      "autoLoad": true,
+      "showControls": false, // Hide default controls
+      "friction": 0.15, // Smoother panning
+      "autoRotate": -2, // Gentle automatic rotation
+      "hotSpots": [
+        {
+          "pitch": 10,
+          "yaw": 20,
+          "cssClass": "custom-hotspot",
+          "createTooltipFunc": hotspot,
+          "createTooltipArgs": "<i class='fas fa-home'></i> Interior Cabaña",
+          "clickHandlerFunc": () => loadScene('scene1')
+        },
+        {
+          "pitch": 0,
+          "yaw": 0,
+          "cssClass": "custom-hotspot",
+          "createTooltipFunc": hotspot,
+          "createTooltipArgs": "<i class='fas fa-tree'></i> Exterior Jardín",
+          "clickHandlerFunc": () => loadScene('scene2')
+        },
+        {
+          "pitch": -10,
+          "yaw": -20,
+          "cssClass": "custom-hotspot",
+          "createTooltipFunc": hotspot,
+          "createTooltipArgs": "<i class='fas fa-chair'></i> Terraza",
+          "clickHandlerFunc": () => loadScene('scene3')
+        },
+        {
+          "pitch": -15,
+          "yaw": 30,
+          "cssClass": "custom-hotspot",
+          "createTooltipFunc": hotspot,
+          "createTooltipArgs": "<i class='fas fa-arrow-left'></i> Volver",
+          "clickHandlerFunc": () => window.location.href = 'ju.html'
+        }
+      ]
+    });
+
+    // Hotspot styling
+    function hotspot(hotSpotDiv, args) {
+      hotSpotDiv.innerHTML = args;
+    }
+
+    // Scene definitions
+    const scenes = {
+      scene1: {
+        panorama: "https://pannellum.org/images/alma.jpg", // Placeholder: Interior
+        hotSpots: [
+          {
+            pitch: 10,
+            yaw: 20,
+            cssClass: "custom-hotspot",
+            createTooltipFunc: hotspot,
+            createTooltipArgs: "<i class='fas fa-home'></i> Interior Cabaña",
+            clickHandlerFunc: () => loadScene('scene1')
+          },
+          {
+            pitch: 0,
+            yaw: 0,
+            cssClass: "custom-hotspot",
+            createTooltipFunc: hotspot,
+            createTooltipArgs: "<i class='fas fa-tree'></i> Exterior Jardín",
+            clickHandlerFunc: () => loadScene('scene2')
+          },
+          {
+            pitch: -10,
+            yaw: -20,
+            cssClass: "custom-hotspot",
+            createTooltipFunc: hotspot,
+            createTooltipArgs: "<i class='fas fa-chair'></i> Terraza",
+            clickHandlerFunc: () => loadScene('scene3')
+          },
+          {
+            pitch: -15,
+            yaw: 30,
+            cssClass: "custom-hotspot",
+            createTooltipFunc: hotspot,
+            createTooltipArgs: "<i class='fas fa-arrow-left'></i> Volver",
+            clickHandlerFunc: () => window.location.href = 'ju.html'
+          }
+        ]
+      },
+      scene2: {
+        panorama: "https://pannellum.org/images/bma-1.jpg", // Placeholder: Jardín
+        hotSpots: [
+          {
+            pitch: 10,
+            yaw: 20,
+            cssClass: "custom-hotspot",
+            createTooltipFunc: hotspot,
+            createTooltipArgs: "<i class='fas fa-home'></i> Interior Cabaña",
+            clickHandlerFunc: () => loadScene('scene1')
+          },
+          {
+            pitch: 0,
+            yaw: 0,
+            cssClass: "custom-hotspot",
+            createTooltipFunc: hotspot,
+            createTooltipArgs: "<i class='fas fa-tree'></i> Exterior Jardín",
+            clickHandlerFunc: () => loadScene('scene2')
+          },
+          {
+            pitch: -10,
+            yaw: -20,
+            cssClass: "custom-hotspot",
+            createTooltipFunc: hotspot,
+            createTooltipArgs: "<i class='fas fa-chair'></i> Terraza",
+            clickHandlerFunc: () => loadScene('scene3')
+          },
+          {
+            pitch: -15,
+            yaw: 30,
+            cssClass: "custom-hotspot",
+            createTooltipFunc: hotspot,
+            createTooltipArgs: "<i class='fas fa-arrow-left'></i> Volver",
+            clickHandlerFunc: () => window.location.href = 'ju.html'
+          }
+        ]
+      },
+      scene3: {
+        panorama: "https://pannellum.org/images/tacon-point.jpg", // Placeholder: Terraza
+        hotSpots: [
+          {
+            pitch: 10,
+            yaw: 20,
+            cssClass: "custom-hotspot",
+            createTooltipFunc: hotspot,
+            createTooltipArgs: "<i class='fas fa-home'></i> Interior Cabaña",
+            clickHandlerFunc: () => loadScene('scene1')
+          },
+          {
+            pitch: 0,
+            yaw: 0,
+            cssClass: "custom-hotspot",
+            createTooltipFunc: hotspot,
+            createTooltipArgs: "<i class='fas fa-tree'></i> Exterior Jardín",
+            clickHandlerFunc: () => loadScene('scene2')
+          },
+          {
+            pitch: -10,
+            yaw: -20,
+            cssClass: "custom-hotspot",
+            createTooltipFunc: hotspot,
+            createTooltipArgs: "<i class='fas fa-chair'></i> Terraza",
+            clickHandlerFunc: () => loadScene('scene3')
+          },
+          {
+            pitch: -15,
+            yaw: 30,
+            cssClass: "custom-hotspot",
+            createTooltipFunc: hotspot,
+            createTooltipArgs: "<i class='fas fa-arrow-left'></i> Volver",
+            clickHandlerFunc: () => window.location.href = 'ju.html'
+          }
+        ]
+      }
+    };
+
+    // Function to load a scene with fade effect
+    function loadScene(sceneId) {
+      const panorama = document.getElementById('panorama');
+      const loader = document.getElementById('loader');
+      const errorMessage = document.getElementById('error-message');
+      panorama.classList.add('loading');
+      loader.style.display = 'block';
+      errorMessage.style.display = 'none';
+      
+      // Create an image to test loading
+      const img = new Image();
+      img.src = scenes[sceneId].panorama;
+      img.onload = () => {
+        setTimeout(() => {
+          viewer.setPanorama(scenes[sceneId].panorama);
+          viewer.setHotSpots(scenes[sceneId].hotSpots);
+          panorama.classList.remove('loading');
+          loader.style.display = 'none';
+        }, 700); // Match fade duration
+      };
+      img.onerror = () => {
+        loader.style.display = 'none';
+        panorama.classList.remove('loading');
+        errorMessage.style.display = 'block';
+      };
+    }
+  </script>
+</body>
+</html>
